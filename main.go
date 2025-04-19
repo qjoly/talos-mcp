@@ -35,7 +35,12 @@ func (m *TalosMCP) setTalosClient() (*client.Client, error) {
 
 	configPath := os.Getenv("TALOSCONFIG")
 	if configPath == "" {
-		configPath = "/Users/qjoly/code/mcp-talos/talosconfig"
+		// Default to a hardcoded path for testing purposes
+		UserHomeDir, err := os.UserHomeDir()
+		if err != nil {
+			return nil, fmt.Errorf("error when getting user home dir: %w", err)
+		}
+		configPath = UserHomeDir + "/.talos/config"
 	}
 
 	m.endpoint = clientConfig.Contexts[clientConfig.Context].Endpoints[0]
