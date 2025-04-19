@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -20,56 +21,75 @@ func NewTalosMCP() *TalosMCP {
 	return &TalosMCP{}
 }
 
-func (m *TalosMCP) setTalosClient() error {
-	clientConfig, err := clientconfig.Open("talosconfig")
+func (m *TalosMCP) getTalosClient() (*client.Client, error) {
+
+	clientConfig, err := clientconfig.Open("/Users/qjoly/code/mcp-talos/talosconfig")
 	if err != nil {
-		return fmt.Errorf("error when opening talos config file: %w", err)
+		return nil, fmt.Errorf("error when opening talos config file: %w", err)
 	}
+
+	ctx := client.WithNodes(context.TODO(), "192.168.32.83,192.168.32.84")
 
 	opts := []client.OptionFunc{
 		client.WithConfig(clientConfig),
+		client.WithConfigFromFile("/Users/qjoly/code/mcp-talos/talosconfig"),
+		client.WithEndpoints("192.168.32.83"),
 	}
 
-	m.talosClient, err = client.New(context.TODO(), opts...)
+	m.talosClient, err = client.New(ctx, opts...)
 	if err != nil {
-		return fmt.Errorf("error when instanciating talos client: %w", err)
+		return nil, fmt.Errorf("error when instanciating talos client: %w", err)
 	}
 
-	return nil
+	return m.talosClient, nil
 }
 
 func (m *TalosMCP) ListDisks(ctx context.Context) ([]map[string]interface{}, error) {
-	if m.talosClient == nil {
-		return nil, fmt.Errorf("not connected to Talos")
-	}
 
-	resp, err := m.talosClient.Disks(ctx)
+	talosClient, err := m.getTalosClient()
 	if err != nil {
-		return nil, fmt.Errorf("failed to list disks: %w", err)
+		return nil, fmt.Errorf("failed to get Talos client: %w", err)
 	}
 
+	listNodes := []string{"192.168.32.83", "192.168.32.84"}
 	var disks []map[string]interface{}
-	for _, msg := range resp.Messages {
-		for _, disk := range msg.Disks {
-			disks = append(disks, map[string]interface{}{
-				"device": disk.DeviceName,
-				"model":  disk.Model,
-				"size":   disk.Size,
-				"type":   disk.Type.String(),
-				"uuid":   disk.Uuid,
-			})
+	for _, node := range listNodes {
+		resp, err := talosClient.Disks(client.WithNodes(context.TODO(), node))
+		if err != nil {
+			return nil, fmt.Errorf("failed to list disks for node %s: %w", node, err)
 		}
+
+		nodeDisks := map[string]interface{}{
+			"node":  node,
+			"disks": []map[string]interface{}{},
+		}
+
+		for _, msg := range resp.Messages {
+			for _, disk := range msg.Disks {
+				nodeDisks["disks"] = append(nodeDisks["disks"].([]map[string]interface{}), map[string]interface{}{
+					"device": disk.DeviceName,
+					"model":  disk.Model,
+					"size":   disk.Size,
+					"type":   disk.Type.String(),
+					"uuid":   disk.Uuid,
+				})
+			}
+		}
+
+		disks = append(disks, nodeDisks)
 	}
 
 	return disks, nil
 }
 
 func (m *TalosMCP) ListNetworkInterfaces(ctx context.Context) ([]map[string]interface{}, error) {
-	if m.talosClient == nil {
-		return nil, fmt.Errorf("not connected to Talos")
+
+	talosClient, err := m.getTalosClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Talos client: %w", err)
 	}
 
-	resp, err := m.talosClient.MachineClient.NetworkDeviceStats(ctx, &emptypb.Empty{})
+	resp, err := talosClient.MachineClient.NetworkDeviceStats(ctx, &emptypb.Empty{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list network interfaces: %w", err)
 	}
@@ -107,11 +127,6 @@ func main() {
 	)
 
 	s.AddTool(diskTool, func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		if talosMCP.talosClient == nil {
-			if err := talosMCP.setTalosClient(); err != nil {
-				return mcp.NewToolResultError(fmt.Sprintf("failed to connect to Talos: %v", err)), nil
-			}
-		}
 
 		disks, err := talosMCP.ListDisks(ctx)
 		if err != nil {
@@ -132,11 +147,6 @@ func main() {
 	)
 
 	s.AddTool(networkTool, func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		if talosMCP.talosClient == nil {
-			if err := talosMCP.setTalosClient(); err != nil {
-				return mcp.NewToolResultError(fmt.Sprintf("failed to connect to Talos: %v", err)), nil
-			}
-		}
 
 		interfaces, err := talosMCP.ListNetworkInterfaces(ctx)
 		if err != nil {
@@ -150,6 +160,23 @@ func main() {
 
 		return mcp.NewToolResultText(string(interfacesJSON)), nil
 	})
+
+	if os.Getenv("MCP_SERVER") != "" {
+		message, err := talosMCP.ListNetworkInterfaces(context.Background())
+		if err != nil {
+			fmt.Printf("Error listing network interfaces: %v\n", err)
+			return
+		}
+		fmt.Printf("Network interfaces: %v\n", message)
+		message, err = talosMCP.ListDisks(context.Background())
+		if err != nil {
+			fmt.Printf("Error listing disks: %v\n", err)
+		}
+		fmt.Printf("Disks: %v\n", message)
+		fmt.Println("MCP server started")
+
+		return
+	}
 
 	// Start the server
 	if err := server.ServeStdio(s); err != nil {
