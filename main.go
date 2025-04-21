@@ -26,11 +26,6 @@ func NewTalosMCP() *TalosMCP {
 
 func (m *TalosMCP) setTalosClient() (*client.Client, error) {
 
-	clientConfig, err := clientconfig.Open("/Users/qjoly/code/mcp-talos/talosconfig")
-	if err != nil {
-		return nil, fmt.Errorf("error when opening talos config file: %w", err)
-	}
-
 	ctx := client.WithNodes(context.TODO(), m.nodes...)
 
 	configPath := os.Getenv("TALOSCONFIG")
@@ -41,6 +36,11 @@ func (m *TalosMCP) setTalosClient() (*client.Client, error) {
 			return nil, fmt.Errorf("error when getting user home dir: %w", err)
 		}
 		configPath = UserHomeDir + "/.talos/config"
+	}
+
+	clientConfig, err := clientconfig.Open(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("error when opening talos config file: %w", err)
 	}
 
 	m.endpoint = clientConfig.Contexts[clientConfig.Context].Endpoints[0]
