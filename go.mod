@@ -5,7 +5,7 @@ go 1.24.2
 require (
 	github.com/mark3labs/mcp-go v0.21.1
 	github.com/siderolabs/talos/pkg/machinery v1.9.5
-	google.golang.org/protobuf v1.36.4
+	google.golang.org/protobuf v1.36.6
 )
 
 require (
