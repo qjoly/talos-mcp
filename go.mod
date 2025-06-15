@@ -3,7 +3,7 @@ module github.com/qjoly/talos-mcp
 go 1.24.2
 
 require (
-	github.com/mark3labs/mcp-go v0.21.1
+	github.com/mark3labs/mcp-go v0.32.0
 	github.com/siderolabs/talos/pkg/machinery v1.9.5
 	google.golang.org/protobuf v1.36.4
 )
@@ -32,6 +32,7 @@ require (
 	github.com/siderolabs/go-api-signature v0.3.6 // indirect
 	github.com/siderolabs/go-pointer v1.0.0 // indirect
 	github.com/siderolabs/protoenc v0.2.1 // indirect
+	github.com/spf13/cast v1.7.1 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
