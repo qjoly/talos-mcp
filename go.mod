@@ -3,7 +3,7 @@ module github.com/qjoly/talos-mcp
 go 1.24.2
 
 require (
-	github.com/mark3labs/mcp-go v0.21.1
+	github.com/mark3labs/mcp-go v0.46.0
 	github.com/siderolabs/talos/pkg/machinery v1.9.5
 	google.golang.org/protobuf v1.36.4
 )
@@ -19,6 +19,7 @@ require (
 	github.com/containernetworking/cni v1.2.3 // indirect
 	github.com/cosi-project/runtime v0.7.6 // indirect
 	github.com/gertd/go-pluralize v0.2.1 // indirect
+	github.com/google/jsonschema-go v0.4.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.24.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -32,6 +33,7 @@ require (
 	github.com/siderolabs/go-api-signature v0.3.6 // indirect
 	github.com/siderolabs/go-pointer v1.0.0 // indirect
 	github.com/siderolabs/protoenc v0.2.1 // indirect
+	github.com/spf13/cast v1.7.1 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
